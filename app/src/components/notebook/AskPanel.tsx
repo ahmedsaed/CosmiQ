@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api-client';
+import { ReferenceModal } from './ReferenceModal';
 import type { Model } from '@/types/api';
 
 interface AskPanelProps {
@@ -24,6 +25,10 @@ export function AskPanel({ notebookId }: AskPanelProps) {
   const [isAsking, setIsAsking] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [hasAsked, setHasAsked] = useState(false);
+  
+  // Modal state for references
+  const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const [referenceNames, setReferenceNames] = useState<Map<string, string>>(new Map());
   
   // Model state
   const [models, setModels] = useState<Model[]>([]);
@@ -212,6 +217,150 @@ export function AskPanel({ notebookId }: AskPanelProps) {
     setAnswer(item.answer);
     setHasAsked(true);
     setShowHistory(false);
+  };
+
+  // Parse references from answer text and fetch their names
+  useEffect(() => {
+    if (!answer) return;
+
+    const parseReferences = async () => {
+      // Match patterns like [source:id], [note:id], [source_insight:id]
+      // Also handles comma-separated references like [note:id, source:id]
+      const referenceRegex = /\[([^\]]+)\]/g;
+      const matches = answer.match(referenceRegex);
+
+      if (!matches) return;
+
+      const newNames = new Map(referenceNames);
+      const allRefIds: string[] = [];
+
+      // Extract all reference IDs (handling comma-separated ones)
+      for (const match of matches) {
+        const innerContent = match.slice(1, -1); // Remove [ and ]
+        const parts = innerContent.split(',').map(p => p.trim());
+        
+        for (const part of parts) {
+          // Check if it's a valid reference pattern
+          if (/^(source_insight|source|note):[a-z0-9]+$/.test(part)) {
+            allRefIds.push(part);
+          }
+        }
+      }
+
+      // Fetch names for all references
+      for (const refId of allRefIds) {
+        if (newNames.has(refId)) continue; // Already fetched
+
+        try {
+          let name = '';
+          const type = refId.split(':')[0];
+          
+          if (refId.startsWith('source_insight:')) {
+            const insight = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055'}/api/insights/${refId}`).then(r => r.json());
+            name = insight.insight_type || insight.title || 'Insight';
+          } else if (refId.startsWith('source:')) {
+            const source = await apiClient.getSource(refId);
+            name = source.title || 'Untitled Source';
+          } else if (refId.startsWith('note:')) {
+            const note = await apiClient.getNote(refId);
+            // Better fallback: use content preview if no title
+            if (note.title) {
+              name = note.title;
+            } else if (note.content) {
+              // Use first 30 chars of content as fallback
+              name = note.content.slice(0, 30).trim() + '...';
+            } else {
+              name = 'AI Note';
+            }
+          }
+
+          newNames.set(refId, name);
+        } catch (error) {
+          console.error(`Failed to fetch name for ${refId}:`, error);
+          // Better fallback based on type
+          const type = refId.split(':')[0];
+          const fallbackNames: Record<string, string> = {
+            'source_insight': 'Insight',
+            'source': 'Source',
+            'note': 'Note',
+          };
+          newNames.set(refId, fallbackNames[type] || 'Reference');
+        }
+      }
+
+      setReferenceNames(newNames);
+    };
+
+    parseReferences();
+  }, [answer]);
+
+  // Render answer with clickable references
+  const renderAnswerWithReferences = () => {
+    if (!answer) return null;
+
+    // Split by reference pattern (handles both single and comma-separated)
+    const referenceRegex = /\[([^\]]+)\]/g;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match;
+    let key = 0;
+
+    while ((match = referenceRegex.exec(answer)) !== null) {
+      // Add text before the reference
+      if (match.index > lastIndex) {
+        parts.push(answer.substring(lastIndex, match.index));
+      }
+
+      const innerContent = match[1]; // Content inside brackets
+      const refParts = innerContent.split(',').map(p => p.trim());
+      
+      // Check if all parts are valid references
+      const allValidRefs = refParts.every(part => 
+        /^(source_insight|source|note):[a-z0-9]+$/.test(part)
+      );
+
+      if (allValidRefs && refParts.length > 0) {
+        // Render clickable references
+        const refButtons = refParts.map((refId, idx) => {
+          const refName = referenceNames.get(refId) || 'Loading...';
+          // Truncate long names to 20 characters
+          const displayName = refName.length > 20 
+            ? refName.slice(0, 20) + '...' 
+            : refName;
+          
+          return (
+            <span key={`${key}-${idx}`}>
+              {idx > 0 && ', '}
+              <button
+                onClick={() => setSelectedReference(refId)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary text-sm font-medium transition-colors border border-primary/30"
+                title={`Click to view: ${refName}`}
+              >
+                {displayName}
+              </button>
+            </span>
+          );
+        });
+
+        parts.push(
+          <span key={key++} className="inline-flex items-center">
+            [{refButtons}]
+          </span>
+        );
+      } else {
+        // Not a reference, keep original text
+        parts.push(match[0]);
+      }
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < answer.length) {
+      parts.push(answer.substring(lastIndex));
+    }
+
+    return parts;
   };
 
   return (
@@ -418,7 +567,9 @@ export function AskPanel({ notebookId }: AskPanelProps) {
                 ref={answerRef}
                 className="text-sm text-text-primary whitespace-pre-wrap max-h-96 overflow-y-auto"
               >
-                {answer || (
+                {answer ? (
+                  <div className="leading-relaxed">{renderAnswerWithReferences()}</div>
+                ) : (
                   <div className="flex items-center gap-2 text-text-tertiary">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Thinking...</span>
@@ -439,6 +590,14 @@ export function AskPanel({ notebookId }: AskPanelProps) {
             </div>
           )}
         </>
+      )}
+
+      {/* Reference Modal */}
+      {selectedReference && (
+        <ReferenceModal
+          referenceId={selectedReference}
+          onClose={() => setSelectedReference(null)}
+        />
       )}
     </div>
   );

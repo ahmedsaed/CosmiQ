@@ -8,3 +8,4 @@ export { AddSourceDialog } from './AddSourceDialog';
 export { AddNoteDialog } from './AddNoteDialog';
 export { SearchPanel } from './SearchPanel';
 export { AskPanel } from './AskPanel';
+export { ReferenceModal } from './ReferenceModal';

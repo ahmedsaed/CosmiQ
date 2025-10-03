@@ -197,8 +197,9 @@ export interface UpdateSettingsData {
 export interface SourceInsight {
   id: string;
   source_id: string;
-  transformation_id: string;
-  title: string;
+  transformation_id?: string;
+  insight_type: string;
+  title?: string; // Optional fallback
   content: string;
   created: string;
   updated: string;
