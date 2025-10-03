@@ -140,7 +140,7 @@ export interface SearchRequest {
   minimum_score?: number;
 }
 
-export interface SearchResult {
+export interface SearchResultOld {
   id: string;
   parent_id: string;
   title: string;
@@ -151,8 +151,8 @@ export interface SearchResult {
   final_score?: number;
 }
 
-export interface SearchResponse {
-  results: SearchResult[];
+export interface SearchResponseOld {
+  results: SearchResultOld[];
   total_count: number;
   search_type: 'text' | 'vector';
 }
@@ -249,15 +249,74 @@ export interface SpeakerProfile {
 
 export interface CreateSpeakerProfileData {
   name: string;
-  description?: string;
-  speakers: Array<{
-    name: string;
-    voice_id: string;
-    backstory: string;
-    personality: string;
-  }>;
-  tts_provider: string;
-  tts_model: string;
+  voice_profile: string;
+  voice_provider?: string;
+}
+
+export interface Settings {
+  OPENAI_API_KEY: string | null;
+  ANTHROPIC_API_KEY: string | null;
+  GROQ_API_KEY: string | null;
+  GEMINI_API_KEY: string | null;
+  DEEPGRAM_API_KEY: string | null;
+  ELEVENLABS_API_KEY: string | null;
+}
+
+// Settings Data is just a plain object
+export type UpdateSettingsDataOld = {
+  [key: string]: string | null;
+};
+
+// Search types (new simplified version)
+export interface SearchResult {
+  id: string;
+  title: string | null;
+  content: string | null;
+  type: 'source' | 'note';
+  score: number;
+  notebook_id: string;
+  created: string;
+  // Backend may return these
+  parent_id?: string;
+  relevance?: number;
+  similarity?: number;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+  query?: string;
+  search_type?: 'text' | 'vector';
+  total: number;
+  total_count?: number; // Backend returns this
+}
+
+// Ask types (simplified)
+export interface AskResponse {
+  answer: string;
+  sources_used: SearchResult[];
+  question: string;
+}
+
+// Podcast types
+export interface PodcastJob {
+  job_id: string;
+  status: string;
+  message: string;
+  episode_profile: string;
+  episode_name: string;
+}
+
+export interface PodcastEpisode {
+  id: string;
+  name: string;
+  description: string | null;
+  audio_file_path: string | null;
+  transcript: string | null;
+  episode_profile: string;
+  speaker_profile: string;
+  notebook_id: string | null;
+  created: string;
+  updated: string;
 }
 
 export interface APIError {

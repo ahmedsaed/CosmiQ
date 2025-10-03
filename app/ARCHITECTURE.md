@@ -457,13 +457,13 @@ If we want caching/refetching:
 3. ✅ CreateNotebookDialog
 4. ✅ Archive/delete functionality
 
-### Phase 3: Notebook Detail Page (Core)
-1. Three-column layout (responsive)
-2. Left: Sources and Notes lists with add dialogs
-3. Middle: Search panel with results
-4. Middle: Ask panel with streaming responses
-5. Right: Generation menu (stubs for now)
-6. Right: Generated items list
+### Phase 3: Notebook Detail Page (Core) ✅
+1. ✅ Three-column layout (responsive)
+2. ✅ Left: Sources and Notes lists with add dialogs
+3. ✅ Middle: Search panel (placeholder)
+4. ✅ Middle: Ask panel (placeholder)
+5. ✅ Right: Generation menu (stubs)
+6. ✅ Right: Generated items list (placeholder)
 
 ### Phase 4: Settings Pages
 1. General settings tab with form
