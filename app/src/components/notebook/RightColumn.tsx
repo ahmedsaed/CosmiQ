@@ -1,62 +1,56 @@
 'use client';
 
-import { Sparkles, Mic, FileText, Wand2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { useState } from 'react';
+import { Wand2, Mic } from 'lucide-react';
+import { TransformationsPanel } from './TransformationsPanel';
+import { PodcastsPanel } from './PodcastsPanel';
 
 interface RightColumnProps {
   notebookId: string;
 }
 
+type Tab = 'transformations' | 'podcasts';
+
 export function RightColumn({ notebookId }: RightColumnProps) {
+  const [activeTab, setActiveTab] = useState<Tab>('transformations');
+
   return (
     <div className="space-y-6">
-      {/* Generations Menu */}
-      <div className="glass-card p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-5 h-5 text-accent-warning" />
-          <h2 className="font-semibold text-text-primary">Generations</h2>
-        </div>
-
-        <div className="space-y-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<Mic />}
-            className="w-full justify-start"
-            onClick={() => alert('Podcast generation coming soon')}
+      {/* Tabs */}
+      <div className="glass-card p-2">
+        <div className="flex gap-1">
+          <button
+            onClick={() => setActiveTab('transformations')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'transformations'
+                ? 'bg-primary text-white'
+                : 'text-text-secondary hover:bg-card/50'
+            }`}
           >
-            Generate Podcast
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<FileText />}
-            className="w-full justify-start"
-            onClick={() => alert('Summary generation coming soon')}
+            <Wand2 className="w-4 h-4" />
+            Transformations
+          </button>
+          <button
+            onClick={() => setActiveTab('podcasts')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'podcasts'
+                ? 'bg-primary text-white'
+                : 'text-text-secondary hover:bg-card/50'
+            }`}
           >
-            Create Summary
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<Wand2 />}
-            className="w-full justify-start"
-            onClick={() => alert('Transformation coming soon')}
-          >
-            Run Transformation
-          </Button>
+            <Mic className="w-4 h-4" />
+            Podcasts
+          </button>
         </div>
       </div>
 
-      {/* Generated Items */}
-      <div className="glass-card p-4">
-        <h3 className="font-medium text-text-primary mb-4">Generated Items</h3>
-        <div className="text-center py-12 text-text-tertiary">
-          <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p className="text-sm">No generated items yet</p>
-          <p className="text-xs mt-2">Generated podcasts, summaries, and insights will appear here</p>
-        </div>
-      </div>
+      {/* Content */}
+      {activeTab === 'transformations' && (
+        <TransformationsPanel notebookId={notebookId} />
+      )}
+      {activeTab === 'podcasts' && (
+        <PodcastsPanel notebookId={notebookId} />
+      )}
     </div>
   );
 }

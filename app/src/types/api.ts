@@ -310,14 +310,14 @@ export interface PodcastJob {
 export interface PodcastEpisode {
   id: string;
   name: string;
-  description: string | null;
-  audio_file_path: string | null;
-  transcript: string | null;
-  episode_profile: string;
-  speaker_profile: string;
-  notebook_id: string | null;
-  created: string;
-  updated: string;
+  episode_profile: { name: string; [key: string]: any };
+  speaker_profile: { name: string; [key: string]: any };
+  briefing: string;
+  audio_file?: string | null;
+  transcript?: any | null;
+  outline?: any | null;
+  created?: string;
+  job_status?: string;
 }
 
 export interface APIError {
