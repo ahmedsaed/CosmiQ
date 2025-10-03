@@ -1,7 +1,7 @@
 'use client';
 
 import { SearchPanel } from './SearchPanel';
-import { AskPanel } from './AskPanel';
+import { ChatPanel } from './ChatPanel';
 
 interface MiddleColumnProps {
   notebookId: string;
@@ -13,8 +13,8 @@ export function MiddleColumn({ notebookId }: MiddleColumnProps) {
       {/* Search Panel */}
       <SearchPanel notebookId={notebookId} />
 
-      {/* Ask Panel */}
-      <AskPanel notebookId={notebookId} />
+      {/* Chat Panel */}
+      <ChatPanel notebookId={notebookId} />
     </div>
   );
 }
