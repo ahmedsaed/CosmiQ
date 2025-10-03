@@ -11,7 +11,8 @@ database:
 
 run:
 	@echo "⚠️  Warning: Starting UI only. For full functionality, use 'make start-all'"
-	uv run --env-file .env streamlit run app_home.py
+	@echo "🌐 Starting Next.js UI on http://localhost:3000..."
+	cd app && npm run dev
 
 lint:
 	uv run python -m mypy .
@@ -87,6 +88,23 @@ full:
 api:
 	uv run run_api.py
 
+# === Frontend Management ===
+.PHONY: ui ui-install ui-build ui-dev
+
+ui: ui-dev
+
+ui-install:
+	@echo "📦 Installing Next.js dependencies..."
+	cd app && npm install
+
+ui-build:
+	@echo "🔨 Building Next.js production bundle..."
+	cd app && npm run build
+
+ui-dev:
+	@echo "🌐 Starting Next.js development server..."
+	cd app && npm run dev
+
 # === Worker Management ===
 .PHONY: worker worker-start worker-stop worker-restart
 
@@ -106,7 +124,7 @@ worker-restart: worker-stop
 
 # === Service Management ===
 start-all:
-	@echo "🚀 Starting Open Notebook (Database + API + Worker + UI)..."
+	@echo "🚀 Starting CosmiQ (Database + API + Worker + UI)..."
 	@echo "📊 Starting SurrealDB..."
 	@docker compose up -d surrealdb
 	@sleep 3
@@ -116,16 +134,16 @@ start-all:
 	@echo "⚙️ Starting background worker..."
 	@uv run --env-file .env surreal-commands-worker --import-modules commands &
 	@sleep 2
-	@echo "🌐 Starting Streamlit UI..."
+	@echo "🌐 Starting Next.js UI..."
 	@echo "✅ All services started!"
-	@echo "📱 UI: http://localhost:8502"
+	@echo "📱 UI: http://localhost:3000"
 	@echo "🔗 API: http://localhost:5055"
 	@echo "📚 API Docs: http://localhost:5055/docs"
-	uv run --env-file .env streamlit run app_home.py
+	cd app && npm run dev
 
 stop-all:
-	@echo "🛑 Stopping all Open Notebook services..."
-	@pkill -f "streamlit run app_home.py" || true
+	@echo "🛑 Stopping all CosmiQ services..."
+	@pkill -f "next dev" || true
 	@pkill -f "surreal-commands-worker" || true
 	@pkill -f "run_api.py" || true
 	@pkill -f "uvicorn api.main:app" || true
@@ -133,15 +151,15 @@ stop-all:
 	@echo "✅ All services stopped!"
 
 status:
-	@echo "📊 Open Notebook Service Status:"
+	@echo "📊 CosmiQ Service Status:"
 	@echo "Database (SurrealDB):"
 	@docker compose ps surrealdb 2>/dev/null || echo "  ❌ Not running"
 	@echo "API Backend:"
 	@pgrep -f "run_api.py\|uvicorn api.main:app" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Background Worker:"
 	@pgrep -f "surreal-commands-worker" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
-	@echo "Streamlit UI:"
-	@pgrep -f "streamlit run app_home.py" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
+	@echo "Next.js UI:"
+	@pgrep -f "next dev" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 
 # Clean up cache directories to reduce build context size
 clean-cache:

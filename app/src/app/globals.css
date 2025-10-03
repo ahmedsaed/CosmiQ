@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-space: #0a0e1a;
+    --bg-panel: #121828;
+    --bg-card: #1a2035;
+    --bg-hover: #232d45;
+    
+    --accent-primary: #00d9ff;
+    --accent-secondary: #a855f7;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+    
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    
+    --border-color: #2d3748;
+    --border-focus: #00d9ff;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-space text-text-primary font-sans antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-panel;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-card rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-hover;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-glass border border-border rounded-lg;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-200 hover:border-primary/50 hover:shadow-glow-primary;
+  }
+
+  .glow-primary {
+    @apply shadow-glow-primary;
+  }
+
+  .glow-secondary {
+    @apply shadow-glow-secondary;
+  }
+}
+
+/* Animations */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.star-field {
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 60px 70px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 50px 50px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.3), transparent),
+    radial-gradient(2px 2px at 90px 10px, rgba(255,255,255,0.3), transparent);
+  background-size: 200px 200px;
+  background-position: 0 0, 40px 60px, 130px 270px, 70px 100px, 150px 50px;
+  animation: star-twinkle 3s ease-in-out infinite;
+}

@@ -38,6 +38,24 @@
 
 > Open Notebook is under active development! We're moving fast and making improvements every week. Your feedback is incredibly valuable to me during this exciting phase and it gives me motivation to keep improving and building this amazing tool. Please feel free to star the project if you find it useful, and don't hesitate to reach out with any questions or suggestions. I'm excited to see how you'll use it and what ideas you'll bring to the project! Let's build something amazing together! 🚀
 
+## 🎨 CosmiQ - New Modern UI
+
+**We're building a brand new Next.js frontend!** This fork (CosmiQ) features a modern, dark space-themed UI to replace the existing Streamlit interface.
+
+**Status**: 
+- ✅ **Phase 1 Complete**: Core infrastructure, API client, design system, and UI components
+- 🚧 **Phase 2 In Progress**: Dashboard and notebook management pages
+- 📅 **Coming Soon**: Full feature parity with Streamlit UI
+
+The new UI offers:
+- 🎨 Beautiful dark space theme inspired by Google NotebookLM
+- ⚡ Modern Next.js 15 with React 18 and TypeScript
+- 🎭 Smooth animations and glass morphism effects
+- 📱 Fully responsive design
+- 🔧 Same powerful API backend
+
+> **Note**: The Streamlit UI remains available and fully functional during the transition.
+
 ## About The Project
 
 ![New Notebook](docs/assets/asset_list.png)
@@ -110,7 +128,8 @@ open-notebook/
 ```
 
 **Access your installation:**
-- **🖥️ Main Interface**: http://localhost:8502 (Streamlit UI)
+- **🌐 New UI** (CosmiQ): http://localhost:3000 (Next.js - Modern Interface)
+- **🖥️ Legacy UI**: http://localhost:8502 (Streamlit - Classic Interface)
 - **🔧 API Access**: http://localhost:5055 (REST API)
 - **📚 API Documentation**: http://localhost:5055/docs (Interactive Swagger UI)
 
@@ -123,7 +142,26 @@ For development or customization:
 ```bash
 git clone https://github.com/lfnovo/open-notebook
 cd open-notebook
+
+# Install frontend dependencies
+cd app && npm install && cd ..
+
+# Start all services (Database + API + Worker + UI)
 make start-all
+```
+
+**Services started:**
+- 📊 SurrealDB database
+- 🔗 FastAPI backend
+- ⚙️ Background worker
+- 🌐 Next.js UI (CosmiQ) on http://localhost:3000
+
+**Alternative commands:**
+```bash
+make ui          # Run only the Next.js UI
+make api         # Run only the API backend
+make status      # Check service status
+make stop-all    # Stop all services
 ```
 
 ### 📖 Need Help?
