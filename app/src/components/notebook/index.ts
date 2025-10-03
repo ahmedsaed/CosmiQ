@@ -9,3 +9,5 @@ export { AddNoteDialog } from './AddNoteDialog';
 export { SearchPanel } from './SearchPanel';
 export { AskPanel } from './AskPanel';
 export { ReferenceModal } from './ReferenceModal';
+export { SourceDetailModal } from './SourceDetailModal';
+export { NoteDetailModal } from './NoteDetailModal';

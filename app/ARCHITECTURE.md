@@ -106,32 +106,57 @@
 ```
 
 **Left Column Components**:
-- `AddSourceButton` + `AddSourceDialog` (upload file, URL, text)
-- `AddNoteButton` + `AddNoteDialog`
-- `SourcesList` (scrollable)
-  - `SourceCard` (title, type icon, actions: view, delete, generate insight)
-- `NotesList` (scrollable)
-  - `NoteCard` (title, preview, actions: view, edit, delete)
+- `AddSourceButton` + `AddSourceDialog` ✅ (upload file, URL, text)
+- `AddNoteButton` + `AddNoteDialog` ✅
+- `SourcesList` ✅ (scrollable)
+  - `SourceCard` ✅ **INTERACTIVE** - Click to open detail modal
+    - Shows title, type icon, content preview
+    - Three-dot menu for quick actions
+    - `SourceDetailModal` ✅ **COMPLETE**
+      - **Process Tab**: View insights, run transformations, manage content
+      - **Content Tab**: View full text
+      - Edit title inline
+      - Delete source with confirmation
+      - Expandable insights with save-as-note and delete actions
+- `NotesList` ✅ (scrollable)
+  - `NoteCard` ✅ **INTERACTIVE** - Click to open detail modal
+    - Shows title, preview, AI/manual badge
+    - Three-dot menu for actions
+    - `NoteDetailModal` ✅ **COMPLETE**
+      - **Preview Tab**: Read-only view
+      - **Edit Tab**: Edit title and content (markdown)
+      - Delete note with confirmation
+      - Visual distinction for AI vs manual notes
 
 **Middle Column Components**:
-- `SearchPanel`
-  - Search input
-  - Search type toggle (text/vector)
+- `SearchPanel` ✅ **COMPLETE**
+  - Search input with Enter key support
+  - Search type toggle (text/vector) with visual indicator
   - Filters (search sources, search notes)
-  - Results list with relevance scores
-- `AskPanel`
-  - Question input
-  - Model selectors (strategy, answer, final answer)
+  - Results list with relevance scores, icons, content previews
+  - Empty states and loading indicators
+  - Expand/collapse functionality
+- `AskPanel` ✅ **COMPLETE**
+  - Question input (multi-line textarea with auto-resize)
+  - Model selectors (strategy, answer, final answer) - auto-populated
   - Streaming answer display with progressive rendering
+  - **Interactive References**: Parse `[source:id]`, `[note:id]`, `[source_insight:id]` from answers
+  - Clickable reference buttons that open detail modals
+  - Smart reference name resolution with fallbacks
   - Save answer as note button
-- `ChatHistory` (persistent chat within notebook context)
+  - Conversation history with expand/collapse
+  - Keyboard shortcuts (Ctrl+Enter to submit)
+- `ChatHistory` ⏸️ **(Planned upgrade from Ask to Chat)**
+  - Persistent conversation threads
+  - Message editing and regeneration
+  - Export conversation as note
 
 **Right Column Components**:
-- `GenerationMenu`
-  - `GeneratePodcastButton` → Opens podcast generation dialog
-  - `CreateSummaryButton` → Runs transformation on notebook context
-  - `RunTransformationMenu` → Select transformation + target (source/note)
-- `GeneratedItemsList`
+- `GenerationMenu` ⏸️ **(Partially implemented - needs dialogs)**
+  - `GeneratePodcastButton` → Opens podcast generation dialog *(stub)*
+  - `CreateSummaryButton` → Runs transformation on notebook context *(stub)*
+  - `RunTransformationMenu` → Select transformation + target (source/note) *(stub)*
+- `GeneratedItemsList` ⏸️ **(Not yet implemented)**
   - `PodcastCard` (title, duration, play/download, delete)
   - `InsightCard` (from transformations, title, content preview, save as note)
   - `SummaryCard` (generated summaries)
@@ -267,12 +292,15 @@
 - `ConfirmDialog` - Generic confirmation modal
 
 ### Data Components
-- `ModelSelector` - Dropdown for selecting AI models (filtered by type)
-- `MarkdownRenderer` - Display markdown content with syntax highlighting
-- `SourceCard` - Display source with icon, title, actions
-- `NoteCard` - Display note with title, preview, actions
-- `SearchResultCard` - Display search result with score and highlights
-- `StreamingAnswer` - Progressive rendering of streaming AI responses
+- `ModelSelector` ✅ - Dropdown for selecting AI models (filtered by type)
+- `MarkdownRenderer` ⏸️ - Display markdown content with syntax highlighting *(needed)*
+- `SourceCard` ✅ - Display source with icon, title, actions
+- `NoteCard` ✅ - Display note with title, preview, actions
+- `SearchResultCard` ✅ - Display search result with score and highlights
+- `StreamingAnswer` ✅ - Progressive rendering of streaming AI responses (in AskPanel)
+- `ReferenceModal` ✅ **NEW** - Display full content of referenced source/note/insight
+- `SourceDetailModal` ✅ **NEW** - View/edit source with insights and transformations
+- `NoteDetailModal` ✅ **NEW** - View/edit note with preview and edit tabs
 
 ### Form Components
 - `NotebookForm` - Create/edit notebook
@@ -457,13 +485,17 @@ If we want caching/refetching:
 3. ✅ CreateNotebookDialog
 4. ✅ Archive/delete functionality
 
-### Phase 3: Notebook Detail Page (Core) ✅
+### Phase 3: Notebook Detail Page (Core) ✅ 90% COMPLETE
 1. ✅ Three-column layout (responsive)
 2. ✅ Left: Sources and Notes lists with add dialogs
-3. ✅ Middle: Search panel (placeholder)
-4. ✅ Middle: Ask panel (placeholder)
-5. ✅ Right: Generation menu (stubs)
-6. ✅ Right: Generated items list (placeholder)
+3. ✅ Left: Interactive source/note cards with detail modals (click to view/edit)
+4. ✅ Middle: **Search panel (COMPLETE)** - Text/vector search with results
+5. ✅ Middle: **Ask panel (COMPLETE)** - Streaming AI Q&A with interactive references
+6. ✅ Interactive References: Clickable `[source:id]`, `[note:id]` links that open detail modals
+7. ✅ Source Detail Modal: View insights, run transformations, edit title, delete source
+8. ✅ Note Detail Modal: Preview/edit tabs, markdown editor, save/delete actions
+9. ⏸️ Right: Generation menu (stubs - needs podcast/summary/transformation dialogs)
+10. ⏸️ Right: Generated items list (placeholder - needs component implementation)
 
 ### Phase 4: Settings Pages
 1. General settings tab with form

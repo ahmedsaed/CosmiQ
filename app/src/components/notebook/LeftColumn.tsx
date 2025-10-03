@@ -71,6 +71,7 @@ export function LeftColumn({
                 source={source}
                 notebookId={notebookId}
                 onDelete={(id: string) => setSources(sources.filter((s) => s.id !== id))}
+                onUpdate={(updated: Source) => setSources(sources.map(s => s.id === updated.id ? updated : s))}
               />
             ))}
           </div>
