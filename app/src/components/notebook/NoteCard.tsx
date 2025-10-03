@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Edit2, Trash2, User, Sparkles, MoreVertical } from 'lucide-react';
+import { Edit2, Trash2, User, Sparkles } from 'lucide-react';
 import { Note } from '@/types/api';
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api-client';
 import { truncate } from '@/lib/utils';
+import { BaseCard } from '@/components/shared/BaseCard';
 import { NoteDetailModal } from './NoteDetailModal';
 
 interface NoteCardProps {
@@ -16,7 +17,6 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, notebookId, onDelete, onUpdate }: NoteCardProps) {
-  const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
@@ -42,91 +42,34 @@ export function NoteCard({ note, notebookId, onDelete, onUpdate }: NoteCardProps
       });
     } finally {
       setLoading(false);
-      setShowMenu(false);
     }
   };
 
   return (
     <>
-      <div 
-        className="group relative p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-secondary/30 transition-all cursor-pointer"
+      <BaseCard
         onClick={() => setShowModal(true)}
-      >
-        <div className="flex items-start gap-3">
-          {/* Icon */}
-          <div className={`flex-shrink-0 p-2 rounded ${
-            note.note_type === 'ai' 
-              ? 'bg-secondary/10 text-secondary'  
-              : 'bg-success/10 text-success'
-          }`}>
-            <Icon className="w-4 h-4" />
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-text-primary truncate">
-              {note.title || 'Untitled Note'}
-            </h4>
-            {note.content && (
-              <p className="text-xs text-text-tertiary line-clamp-2 mt-1">
-                {truncate(note.content, 80)}
-              </p>
-            )}
-          </div>
-
-          {/* Actions Menu */}
-          <div className="relative flex-shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
-              }}
-              disabled={loading}
-              className="p-1 rounded hover:bg-hover text-text-secondary hover:text-text-primary transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
-              aria-label="More options"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-
-            {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMenu(false);
-                  }}
-                />
-                <div className="absolute right-0 top-8 z-20 w-48 glass-card border border-border shadow-lg rounded-lg overflow-hidden">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      setShowModal(true);
-                    }}
-                    disabled={loading}
-                    className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-hover transition-colors text-text-secondary hover:text-text-primary disabled:opacity-50"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete();
-                    }}
-                    disabled={loading}
-                    className="w-full px-4 py-2 text-left text-sm flex items-center gap-2 hover:bg-hover transition-colors text-danger hover:text-danger disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+        icon={<Icon className="w-4 h-4" />}
+        iconBgColor={note.note_type === 'ai' ? 'bg-secondary/10' : 'bg-success/10'}
+        iconTextColor={note.note_type === 'ai' ? 'text-secondary' : 'text-success'}
+        title={note.title || 'Untitled Note'}
+        preview={note.content ? truncate(note.content, 80) : undefined}
+        borderHoverColor="hover:border-secondary/30"
+        loading={loading}
+        menuItems={[
+          {
+            label: 'Edit',
+            onClick: () => setShowModal(true),
+            icon: <Edit2 className="w-4 h-4" />,
+          },
+          {
+            label: 'Delete',
+            onClick: handleDelete,
+            icon: <Trash2 className="w-4 h-4" />,
+            variant: 'danger',
+          },
+        ]}
+      />
 
       {/* Detail Modal */}
       {showModal && (

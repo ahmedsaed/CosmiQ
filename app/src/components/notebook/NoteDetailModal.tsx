@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Save, Trash2, Loader2, User, Sparkles, Eye, Edit3 } from 'lucide-react';
+import { Save, Trash2, Loader2, User, Sparkles, Eye, Edit3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api-client';
+import { BaseModal } from '@/components/shared/BaseModal';
 import type { Note } from '@/types/api';
 
 interface NoteDetailModalProps {
@@ -25,27 +25,12 @@ export function NoteDetailModal({ noteId, notebookId, onClose, onUpdate, onDelet
   const [editedTitle, setEditedTitle] = useState('');
   const [editedContent, setEditedContent] = useState('');
   const [activeTab, setActiveTab] = useState<'preview' | 'edit'>('preview');
-  const [mounted, setMounted] = useState(false);
   
   const { showToast } = useToast();
 
   useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
-  useEffect(() => {
     loadNote();
   }, [noteId]);
-
-  useEffect(() => {
-    // Close on escape key
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
 
   const loadNote = async () => {
     try {
@@ -122,121 +107,20 @@ export function NoteDetailModal({ noteId, notebookId, onClose, onUpdate, onDelet
     return editedTitle !== (note.title || '') || editedContent !== (note.content || '');
   };
 
-  if (!mounted) return null;
-
-  if (loading) {
-    return createPortal(
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="glass-card p-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-        </div>
-      </div>,
-      document.body
-    );
-  }
-
   if (!note) return null;
 
   const Icon = note.note_type === 'ai' ? Sparkles : User;
   const iconColor = note.note_type === 'ai' ? 'text-secondary' : 'text-success';
 
-  const modalContent = (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="glass-card w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded ${note.note_type === 'ai' ? 'bg-secondary/10' : 'bg-success/10'}`}>
-              <Icon className={`w-5 h-5 ${iconColor}`} />
-            </div>
-            <div>
-              <h2 className="font-semibold text-text-primary">{note.title || 'Untitled Note'}</h2>
-              <p className="text-sm text-text-tertiary">
-                {note.note_type === 'ai' ? 'AI Generated' : 'Manual Note'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-card/50 transition-colors text-text-tertiary hover:text-text-primary"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex border-b border-border px-6">
-          <button
-            onClick={() => setActiveTab('preview')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === 'preview'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-tertiary hover:text-text-secondary'
-            }`}
-          >
-            <Eye className="w-4 h-4" />
-            Preview
-          </button>
-          <button
-            onClick={() => setActiveTab('edit')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-              activeTab === 'edit'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-tertiary hover:text-text-secondary'
-            }`}
-          >
-            <Edit3 className="w-4 h-4" />
-            Edit
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'preview' ? (
-            <div>
-              <h3 className="text-xl font-semibold text-text-primary mb-4">
-                {note.title || 'Untitled Note'}
-              </h3>
-              <div className="prose prose-invert prose-sm max-w-none">
-                <div className="whitespace-pre-wrap text-text-primary">
-                  {note.content || 'No content'}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-text-tertiary mb-2 block">Title</label>
-                <Input
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  placeholder="Enter note title..."
-                  className="w-full"
-                />
-              </div>
-              
-              <div>
-                <label className="text-sm text-text-tertiary mb-2 block">Content (Markdown supported)</label>
-                <Textarea
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  placeholder="Enter note content..."
-                  rows={15}
-                  className="w-full font-mono text-sm"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-border">
+  return (
+    <BaseModal
+      isOpen={true}
+      onClose={onClose}
+      size="xl"
+      loading={loading}
+      showHeader={false}
+      footer={
+        <div className="flex items-center justify-between w-full">
           <Button
             onClick={handleDelete}
             variant="ghost"
@@ -271,9 +155,85 @@ export function NoteDetailModal({ noteId, notebookId, onClose, onUpdate, onDelet
             )}
           </div>
         </div>
+      }
+    >
+      {/* Custom Header */}
+      <div className="flex items-center justify-between mb-6 -mt-6 -mx-6 p-6 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded ${note.note_type === 'ai' ? 'bg-secondary/10' : 'bg-success/10'}`}>
+            <Icon className={`w-5 h-5 ${iconColor}`} />
+          </div>
+          <div>
+            <h2 className="font-semibold text-text-primary">{note.title || 'Untitled Note'}</h2>
+            <p className="text-sm text-text-tertiary">
+              {note.note_type === 'ai' ? 'AI Generated' : 'Manual Note'}
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  );
 
-  return createPortal(modalContent, document.body);
+      {/* Tabs */}
+      <div className="flex border-b border-border -mx-6 px-6 mb-6">
+        <button
+          onClick={() => setActiveTab('preview')}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'preview'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-tertiary hover:text-text-secondary'
+          }`}
+        >
+          <Eye className="w-4 h-4" />
+          Preview
+        </button>
+        <button
+          onClick={() => setActiveTab('edit')}
+          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'edit'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-tertiary hover:text-text-secondary'
+          }`}
+        >
+          <Edit3 className="w-4 h-4" />
+          Edit
+        </button>
+      </div>
+
+      {/* Content */}
+      {activeTab === 'preview' ? (
+        <div>
+          <h3 className="text-xl font-semibold text-text-primary mb-4">
+            {note.title || 'Untitled Note'}
+          </h3>
+          <div className="prose prose-invert prose-sm max-w-none">
+            <div className="whitespace-pre-wrap text-text-primary">
+              {note.content || 'No content'}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-text-tertiary mb-2 block">Title</label>
+            <Input
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              placeholder="Enter note title..."
+              className="w-full"
+            />
+          </div>
+          
+          <div>
+            <label className="text-sm text-text-tertiary mb-2 block">Content (Markdown supported)</label>
+            <Textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              placeholder="Enter note content..."
+              rows={15}
+              className="w-full font-mono text-sm"
+            />
+          </div>
+        </div>
+      )}
+    </BaseModal>
+  );
 }

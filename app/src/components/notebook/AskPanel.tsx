@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api-client';
 import { ReferenceModal } from './ReferenceModal';
-import type { Model } from '@/types/api';
+import { SourceDetailModal } from './SourceDetailModal';
+import { NoteDetailModal } from './NoteDetailModal';
+import type { Model, Source, Note } from '@/types/api';
 
 interface AskPanelProps {
   notebookId: string;
@@ -28,6 +30,8 @@ export function AskPanel({ notebookId }: AskPanelProps) {
   
   // Modal state for references
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [referenceNames, setReferenceNames] = useState<Map<string, string>>(new Map());
   
   // Model state
@@ -219,6 +223,39 @@ export function AskPanel({ notebookId }: AskPanelProps) {
     setShowHistory(false);
   };
 
+  // Handle reference click - open appropriate modal based on type
+  const handleReferenceClick = async (refId: string) => {
+    try {
+      if (refId.startsWith('source:')) {
+        // Open SourceDetailModal
+        setSelectedSourceId(refId);
+      } else if (refId.startsWith('note:')) {
+        // Open NoteDetailModal
+        setSelectedNoteId(refId);
+      } else if (refId.startsWith('source_insight:')) {
+        // Keep using ReferenceModal for insights (no full detail modal exists)
+        setSelectedReference(refId);
+      }
+    } catch (error) {
+      console.error(`Failed to load reference ${refId}:`, error);
+      showToast({
+        title: 'Failed to load reference',
+        description: 'Could not load the referenced item',
+        variant: 'error',
+      });
+    }
+  };
+
+  // Handle source update from modal (no action needed, modal manages its own state)
+  const handleSourceUpdate = (updatedSource: Source) => {
+    // Could refresh reference names if needed
+  };
+
+  // Handle note update from modal (no action needed, modal manages its own state)
+  const handleNoteUpdate = (updatedNote: Note) => {
+    // Could refresh reference names if needed
+  };
+
   // Parse references from answer text and fetch their names
   useEffect(() => {
     if (!answer) return;
@@ -332,7 +369,7 @@ export function AskPanel({ notebookId }: AskPanelProps) {
             <span key={`${key}-${idx}`}>
               {idx > 0 && ', '}
               <button
-                onClick={() => setSelectedReference(refId)}
+                onClick={() => handleReferenceClick(refId)}
                 className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded bg-primary/20 hover:bg-primary/30 text-primary text-sm font-medium transition-colors border border-primary/30"
                 title={`Click to view: ${refName}`}
               >
@@ -592,11 +629,34 @@ export function AskPanel({ notebookId }: AskPanelProps) {
         </>
       )}
 
-      {/* Reference Modal */}
+      {/* Reference Modals */}
+      {/* For source_insight references - use simple ReferenceModal */}
       {selectedReference && (
         <ReferenceModal
           referenceId={selectedReference}
           onClose={() => setSelectedReference(null)}
+        />
+      )}
+
+      {/* For source references - use full SourceDetailModal */}
+      {selectedSourceId && (
+        <SourceDetailModal
+          sourceId={selectedSourceId}
+          notebookId={notebookId}
+          onClose={() => setSelectedSourceId(null)}
+          onUpdate={handleSourceUpdate}
+          onDelete={() => setSelectedSourceId(null)}
+        />
+      )}
+
+      {/* For note references - use full NoteDetailModal */}
+      {selectedNoteId && (
+        <NoteDetailModal
+          noteId={selectedNoteId}
+          notebookId={notebookId}
+          onClose={() => setSelectedNoteId(null)}
+          onUpdate={handleNoteUpdate}
+          onDelete={() => setSelectedNoteId(null)}
         />
       )}
     </div>
