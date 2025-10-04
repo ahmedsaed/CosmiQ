@@ -7,6 +7,10 @@ from api.models import ErrorResponse, NotebookCreate, NotebookResponse, Notebook
 from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
+from api.utils.pdf_fetcher import fetch_pdf_links
+from open_notebook.graphs.source import source_graph
+import asyncio
+
 router = APIRouter()
 
 
@@ -38,7 +42,6 @@ async def get_notebooks(
         logger.error(f"Error fetching notebooks: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching notebooks: {str(e)}")
 
-
 @router.post("/notebooks", response_model=NotebookResponse)
 async def create_notebook(notebook: NotebookCreate):
     """Create a new notebook."""
@@ -48,6 +51,36 @@ async def create_notebook(notebook: NotebookCreate):
             description=notebook.description,
         )
         await new_notebook.save()
+        
+        # ===== AUTO-POPULATE SOURCES =====
+        pdf_links = await fetch_pdf_links(limit=10)
+
+        if pdf_links:
+            logger.info(f"Auto-populating {len(pdf_links)} sources for notebook {new_notebook.id}")
+            
+            for pdf_info in pdf_links:
+                try:
+                    content_state = {"url": pdf_info['url']}
+                    
+                    result = await source_graph.ainvoke({
+                        "content_state": content_state,
+                        "notebook_id": new_notebook.id,
+                        "apply_transformations": [],
+                        "embed": True,
+                    })
+                    
+                    if pdf_info['title'] and result["source"]:
+                        source = result["source"]
+                        source.title = pdf_info['title']
+                        await source.save()
+                    
+                    logger.info(f"Created source {len([s for s in pdf_links if s == pdf_info]) + 1}/{len(pdf_links)}: {pdf_info['title']}")
+                except Exception as e:
+                    logger.error(f"Failed to create source for {pdf_info['url']}: {str(e)}")
+            
+            logger.info(f"Finished auto-populating sources for notebook {new_notebook.id}")
+        
+        # ===== END AUTO-POPULATE =====
         
         return NotebookResponse(
             id=new_notebook.id,
