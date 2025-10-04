@@ -259,7 +259,7 @@ export function TransformationsPanel({ notebookId }: TransformationsPanelProps) 
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
           {insights.map((insight) => (
             <BaseCard
               key={insight.id}

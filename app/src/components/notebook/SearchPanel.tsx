@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api-client';
+import { SourceDetailModal } from './SourceDetailModal';
+import { NoteDetailModal } from './NoteDetailModal';
 import type { SearchResult } from '@/types/api';
 
 interface SearchPanelProps {
@@ -19,6 +21,8 @@ export function SearchPanel({ notebookId }: SearchPanelProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const handleSearch = async () => {
@@ -99,8 +103,21 @@ export function SearchPanel({ notebookId }: SearchPanelProps) {
     }
   };
 
+  const handleResultClick = (result: SearchResult) => {
+    // Use parent_id which contains the actual source/note ID with prefix
+    // e.g., "source:xyz" or "note:abc"
+    // The backend API expects the full ID with table prefix
+    const idToUse = result.parent_id || result.id;
+    
+    if (result.type === 'source') {
+      setSelectedSourceId(idToUse);
+    } else if (result.type === 'note') {
+      setSelectedNoteId(idToUse);
+    }
+  };
+
   const truncate = (text: string | null, length: number) => {
-    if (!text) return 'No content available';
+    if (!text) return '';
     return text.length > length ? text.slice(0, length) + '...' : text;
   };
 
@@ -243,6 +260,7 @@ export function SearchPanel({ notebookId }: SearchPanelProps) {
                 {results.map((result) => (
                   <div
                     key={result.id}
+                    onClick={() => handleResultClick(result)}
                     className="glass-card p-4 hover:bg-card hover:border-primary/30 transition-all cursor-pointer"
                   >
                     <div className="flex items-start gap-3">
@@ -259,9 +277,11 @@ export function SearchPanel({ notebookId }: SearchPanelProps) {
                           <h3 className="font-medium text-text-primary break-words">
                             {result.title || `Untitled ${result.type}`}
                           </h3>
-                          <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-accent-warning/10 text-accent-warning font-medium">
-                            {formatScore(result.score)}%
-                          </span>
+                          {searchType === 'vector' && (
+                            <span className="flex-shrink-0 px-2 py-0.5 text-xs rounded bg-accent-warning/10 text-accent-warning font-medium">
+                              {formatScore(result.score)}%
+                            </span>
+                          )}
                         </div>
                         
                         <p className="text-sm text-text-secondary line-clamp-2 break-words">
@@ -281,6 +301,35 @@ export function SearchPanel({ notebookId }: SearchPanelProps) {
             )}
           </div>
         </>
+      )}
+
+      {/* Modals */}
+      {selectedSourceId && (
+        <SourceDetailModal
+          onClose={() => setSelectedSourceId(null)}
+          sourceId={selectedSourceId}
+          notebookId={notebookId}
+          onUpdate={() => {
+            // Optionally refresh search results after update
+          }}
+          onDelete={() => {
+            setSelectedSourceId(null);
+          }}
+        />
+      )}
+
+      {selectedNoteId && (
+        <NoteDetailModal
+          onClose={() => setSelectedNoteId(null)}
+          noteId={selectedNoteId}
+          notebookId={notebookId}
+          onUpdate={() => {
+            // Optionally refresh search results after update
+          }}
+          onDelete={() => {
+            setSelectedNoteId(null);
+          }}
+        />
       )}
     </div>
   );
