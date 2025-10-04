@@ -3,10 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.single
-      args:
-        # Set the API URL for the Next.js build
-        # For production, replace with your actual domain (e.g., https://your-domain.com)
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5055}
     ports:
       - "3000:3000"  # Next.js UI
       - "5055:5055"  # REST API
