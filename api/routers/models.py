@@ -1,13 +1,86 @@
-from typing import List, Optional
+import os
+from typing import Dict, List, Optional
 
+from esperanto import AIFactory
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from api.models import DefaultModelsResponse, ModelCreate, ModelResponse
 from open_notebook.domain.models import DefaultModels, Model
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
+
+
+def check_available_providers():
+    """Check which AI providers are available based on environment variables."""
+    provider_status = {}
+    
+    # Check each provider's required environment variables
+    provider_status["ollama"] = os.environ.get("OLLAMA_API_BASE") is not None
+    provider_status["openai"] = os.environ.get("OPENAI_API_KEY") is not None
+    provider_status["groq"] = os.environ.get("GROQ_API_KEY") is not None
+    provider_status["xai"] = os.environ.get("XAI_API_KEY") is not None
+    provider_status["vertex"] = (
+        os.environ.get("VERTEX_PROJECT") is not None
+        and os.environ.get("VERTEX_LOCATION") is not None
+        and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
+    )
+    provider_status["google"] = (
+        os.environ.get("GOOGLE_API_KEY") is not None
+        or os.environ.get("GEMINI_API_KEY") is not None
+    )
+    provider_status["openrouter"] = os.environ.get("OPENROUTER_API_KEY") is not None
+    provider_status["anthropic"] = os.environ.get("ANTHROPIC_API_KEY") is not None
+    provider_status["elevenlabs"] = os.environ.get("ELEVENLABS_API_KEY") is not None
+    provider_status["voyage"] = os.environ.get("VOYAGE_API_KEY") is not None
+    provider_status["azure"] = (
+        os.environ.get("AZURE_OPENAI_API_KEY") is not None
+        and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
+        and os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME") is not None
+        and os.environ.get("AZURE_OPENAI_API_VERSION") is not None
+    )
+    provider_status["mistral"] = os.environ.get("MISTRAL_API_KEY") is not None
+    provider_status["deepseek"] = os.environ.get("DEEPSEEK_API_KEY") is not None
+    provider_status["openai-compatible"] = (
+        os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
+    )
+    
+    return provider_status
+
+
+@router.get("/models/providers")
+async def get_available_providers():
+    """Get available AI providers and their supported model types."""
+    try:
+        # Get providers that Esperanto supports for each model type
+        esperanto_providers = AIFactory.get_available_providers()
+        
+        # Check which providers have API keys configured
+        provider_status = check_available_providers()
+        configured_providers = [k for k, v in provider_status.items() if v]
+        
+        # Filter providers by what's configured and remove perplexity
+        result: Dict[str, List[str]] = {}
+        for model_type, providers in esperanto_providers.items():
+            available = [
+                p for p in providers 
+                if p in configured_providers and p != "perplexity"
+            ]
+            available.sort()
+            result[model_type] = available
+        
+        return {
+            "providers_by_type": result,
+            "configured_providers": configured_providers,
+            "all_providers": list(provider_status.keys())
+        }
+    except Exception as e:
+        logger.error(f"Error fetching available providers: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error fetching available providers: {str(e)}"
+        )
 
 
 @router.get("/models", response_model=List[ModelResponse])

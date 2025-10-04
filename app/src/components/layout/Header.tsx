@@ -1,13 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Settings, BookOpen } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export function Header() {
-  const pathname = usePathname();
-
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-panel/80 backdrop-blur-glass">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -24,28 +20,6 @@ export function Header() {
             <p className="text-xs text-text-tertiary">Research Assistant</p>
           </div>
         </Link>
-
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link
-            href="/dashboard"
-            className={cn(
-              'text-sm font-medium transition-colors hover:text-primary',
-              pathname === '/' || pathname === '/dashboard' ? 'text-primary' : 'text-text-secondary'
-            )}
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/settings"
-            className={cn(
-              'text-sm font-medium transition-colors hover:text-primary',
-              pathname?.startsWith('/settings') ? 'text-primary' : 'text-text-secondary'
-            )}
-          >
-            Settings
-          </Link>
-        </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-2">

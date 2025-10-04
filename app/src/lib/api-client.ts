@@ -11,6 +11,7 @@ import type {
   Model,
   CreateModelData,
   DefaultModels,
+  AvailableProvidersResponse,
   Transformation,
   CreateTransformationData,
   UpdateTransformationData,
@@ -276,6 +277,10 @@ class APIClient {
   async getModels(params?: { type?: string }): Promise<Model[]> {
     const query = params?.type ? `?type=${params.type}` : '';
     return this.request<Model[]>(`/api/models${query}`);
+  }
+
+  async getAvailableProviders(): Promise<AvailableProvidersResponse> {
+    return this.request<AvailableProvidersResponse>('/api/models/providers');
   }
 
   async createModel(data: CreateModelData): Promise<Model> {

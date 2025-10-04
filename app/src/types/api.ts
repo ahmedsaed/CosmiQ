@@ -95,6 +95,17 @@ export interface CreateModelData {
   type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text';
 }
 
+export interface AvailableProvidersResponse {
+  providers_by_type: {
+    language: string[];
+    embedding: string[];
+    text_to_speech: string[];
+    speech_to_text: string[];
+  };
+  configured_providers: string[];
+  all_providers: string[];
+}
+
 export interface DefaultModels {
   default_chat_model: string | null;
   default_transformation_model: string | null;

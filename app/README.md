@@ -79,25 +79,88 @@ app/
 
 ## Development Status
 
-### Phase 1: Foundation ✅
-- [x] Next.js project setup
-- [x] Tailwind CSS with dark space theme
-- [x] API client with Bearer auth
-- [x] TypeScript types for all API models
-- [x] Base UI components (Button, Card, Input, Textarea)
-- [ ] AppShell layout with Header
-- [ ] Additional UI components
+### Phase 1: Foundation ✅ COMPLETE
+- ✅ Next.js 15 project setup with App Router
+- ✅ Tailwind CSS with custom dark space theme
+- ✅ API client with Bearer auth
+- ✅ TypeScript types for all API models
+- ✅ Base UI components (Button, Card, Input, Textarea, Modal)
+- ✅ Shared components (BaseCard, BaseModal)
+- ✅ Toast notification system
+- ✅ Loading states and error handling
 
-### Phase 2: Dashboard (In Progress)
-- [ ] Notebooks list page
-- [ ] Notebook cards
-- [ ] Create notebook dialog
-- [ ] Archive/delete functionality
+### Phase 2: Dashboard ✅ COMPLETE
+- ✅ Notebooks list page with grid layout
+- ✅ Notebook cards with hover effects
+- ✅ Create notebook dialog
+- ✅ Archive/restore functionality
+- ✅ Delete with confirmation
+- ✅ Empty states
+- ✅ Search and filters
+- ✅ Responsive design
 
-### Phase 3: Notebook Detail
-- [ ] Three-column layout
-- [ ] Sources and notes management
-- [ ] Search and Ask panels
+### Phase 3: Notebook Detail Page ✅ COMPLETE
+- ✅ Three-column responsive layout
+- ✅ **Left Column**: Sources & Notes management
+  - ✅ Add/delete sources (file, URL, text, YouTube)
+  - ✅ Add/delete notes
+  - ✅ Source and note detail modals
+  - ✅ Scrollable lists with counters
+- ✅ **Middle Column**: Chat & Search
+  - ✅ **Chat Panel**: AI conversations with streaming responses
+  - ✅ **Search Panel**: Text and vector search with clickable results
+  - ✅ Reference parsing and modal integration
+  - ✅ Export answers as notes
+- ✅ **Right Column**: Generations (Tabbed)
+  - ✅ **Generations Tab**: Apply transformations, generate insights
+  - ✅ **Podcasts Tab**: Generate audio episodes from content
+  - ✅ Status tracking and downloads
+  - ✅ Scrollable containers
+- ✅ Notebook header with inline editing
+- ✅ Full API integration
+- ✅ Toast notifications for all actions
+
+### Phase 4: Settings & Polish (Next)
+- [ ] Settings page with tabs
+- [ ] Model management (add/edit/delete)
+- [ ] Transformation type management
+- [ ] Podcast profile configuration
+- [ ] System settings
+- [ ] Performance optimizations
+- [ ] Additional UI polish
+
+## Key Features
+
+### 🤖 AI Chat
+- Real-time streaming responses
+- Clickable references to sources and notes
+- Model auto-loading from backend
+- Export answers as notes
+- Message history
+
+### 🔍 Search
+- **Text Search**: Exact keyword matching with highlighting
+- **Vector Search**: Semantic similarity with scores
+- Search across sources and notes
+- Clickable results open detail modals
+
+### ✨ Generations
+- Apply transformation types to sources
+- Generate insights using AI models
+- View, save, and manage insights
+- Batch processing support
+
+### 🎙️ Podcasts
+- Generate audio episodes from notebook content
+- Configure episode and speaker profiles
+- Track generation status
+- Download completed episodes
+
+### 📚 Content Management
+- Multiple source types (files, URLs, text, YouTube)
+- Human and AI notes
+- Full-text search and embeddings
+- Organize by notebooks
 - [ ] Generations panel
 
 ### Phase 4: Settings

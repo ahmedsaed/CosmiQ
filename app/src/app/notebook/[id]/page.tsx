@@ -200,17 +200,27 @@ export default function NotebookPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 group">
-                    <h1 className="text-2xl font-bold text-text-primary truncate">
-                      {notebook.name}
-                    </h1>
-                    <button
-                      onClick={() => setEditingName(true)}
-                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-hover transition-all"
-                      aria-label="Edit name"
-                    >
-                      <Edit2 className="w-4 h-4 text-text-secondary" />
-                    </button>
+                  <div className="flex items-center gap-3 group">
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-2xl font-bold text-text-primary truncate">
+                        {notebook.name}
+                      </h1>
+                      <button
+                        onClick={() => setEditingName(true)}
+                        className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-hover transition-all"
+                        aria-label="Edit name"
+                      >
+                        <Edit2 className="w-4 h-4 text-text-secondary" />
+                      </button>
+                    </div>
+                    {notebook.description && (
+                      <>
+                        <span className="text-text-tertiary">•</span>
+                        <p className="text-text-secondary text-sm truncate">
+                          {notebook.description}
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -244,13 +254,6 @@ export default function NotebookPage() {
               </Button>
             </div>
           </div>
-
-          {/* Description */}
-          {notebook.description && (
-            <p className="text-text-secondary text-sm mt-2 ml-28">
-              {notebook.description}
-            </p>
-          )}
         </div>
       </div>
 
