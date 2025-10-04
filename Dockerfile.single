@@ -44,6 +44,11 @@ RUN npm ci
 # Copy the rest of the Next.js app
 COPY app/ ./
 
+# Set build-time environment variables
+# For Docker deployment, the API runs on the same host at port 5055
+ARG NEXT_PUBLIC_API_URL=http://localhost:5055
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Build the Next.js app
 RUN npm run build
 
