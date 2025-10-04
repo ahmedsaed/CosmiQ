@@ -28,7 +28,7 @@ export function RightColumn({ notebookId }: RightColumnProps) {
             }`}
           >
             <Wand2 className="w-4 h-4" />
-            Transformations
+            Generations
           </button>
           <button
             onClick={() => setActiveTab('podcasts')}

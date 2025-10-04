@@ -167,6 +167,23 @@ class APIClient {
     });
   }
 
+  async getInsight(insightId: string): Promise<SourceInsight> {
+    return this.request<SourceInsight>(`/api/insights/${insightId}`);
+  }
+
+  async deleteInsight(insightId: string): Promise<void> {
+    return this.request<void>(`/api/insights/${insightId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async saveInsightAsNote(insightId: string, notebookId: string): Promise<Note> {
+    return this.request<Note>(`/api/insights/${insightId}/save-as-note`, {
+      method: 'POST',
+      body: JSON.stringify({ notebook_id: notebookId }),
+    });
+  }
+
   // Notes
   async getNotes(params?: { notebook_id?: string }): Promise<Note[]> {
     const query = params?.notebook_id ? `?notebook_id=${params.notebook_id}` : '';

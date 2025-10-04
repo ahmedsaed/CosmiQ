@@ -33,6 +33,7 @@ export interface Source {
   full_text: string | null;
   notebook_id: string;
   embedding: number[] | null;
+  insights?: SourceInsight[];
   created: string;
   updated: string;
 }

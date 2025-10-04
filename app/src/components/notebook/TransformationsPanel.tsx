@@ -1,65 +1,75 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Wand2, Plus, Play, Trash2, Edit2, Loader2 } from 'lucide-react';
+import { Wand2, Plus, Trash2, Save, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Textarea } from '@/components/ui/Textarea';
-import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/lib/api-client';
 import { BaseModal } from '@/components/shared/BaseModal';
 import { BaseCard } from '@/components/shared/BaseCard';
-import type { Transformation, Model } from '@/types/api';
+import type { Transformation, Source, SourceInsight, Model } from '@/types/api';
 
 interface TransformationsPanelProps {
   notebookId: string;
 }
 
-interface TransformationFormData {
-  name: string;
-  title: string;
-  description: string;
-  prompt: string;
-  apply_default: boolean;
+interface ApplyFormData {
+  sourceId: string;
+  transformationId: string;
+  modelId: string;
 }
 
 export function TransformationsPanel({ notebookId }: TransformationsPanelProps) {
   const [transformations, setTransformations] = useState<Transformation[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [insights, setInsights] = useState<SourceInsight[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showPlaygroundModal, setShowPlaygroundModal] = useState(false);
-  const [selectedTransformation, setSelectedTransformation] = useState<Transformation | null>(null);
-  const [formData, setFormData] = useState<TransformationFormData>({
-    name: '',
-    title: '',
-    description: '',
-    prompt: '',
-    apply_default: false,
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showInsightModal, setShowInsightModal] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState<SourceInsight | null>(null);
+  const [formData, setFormData] = useState<ApplyFormData>({
+    sourceId: '',
+    transformationId: '',
+    modelId: '',
   });
-  
-  // Playground state
-  const [playgroundInput, setPlaygroundInput] = useState('');
-  const [playgroundOutput, setPlaygroundOutput] = useState('');
-  const [playgroundModel, setPlaygroundModel] = useState('');
-  const [isExecuting, setIsExecuting] = useState(false);
+  const [applying, setApplying] = useState(false);
 
   const { showToast } = useToast();
 
   useEffect(() => {
-    loadTransformations();
-    loadModels();
-  }, []);
+    loadData();
+  }, [notebookId]);
 
-  const loadTransformations = async () => {
+  const loadData = async () => {
     try {
-      const data = await apiClient.getTransformations();
-      setTransformations(data);
+      const [transData, sourcesData, modelsData] = await Promise.all([
+        apiClient.getTransformations(),
+        apiClient.getSources({ notebook_id: notebookId }),
+        apiClient.getModels({ type: 'language' }),
+      ]);
+      
+      setTransformations(transData);
+      setSources(sourcesData);
+      setModels(modelsData);
+      
+      // Set defaults
+      if (sourcesData.length > 0) {
+        setFormData(prev => ({ ...prev, sourceId: sourcesData[0].id }));
+      }
+      if (transData.length > 0) {
+        setFormData(prev => ({ ...prev, transformationId: transData[0].id }));
+      }
+      if (modelsData.length > 0) {
+        setFormData(prev => ({ ...prev, modelId: modelsData[0].id }));
+      }
+      
+      // Load all insights for sources in this notebook
+      await loadInsights(sourcesData);
     } catch (error: any) {
-      console.error('Failed to load transformations:', error);
+      console.error('Failed to load data:', error);
       showToast({
-        title: 'Failed to load transformations',
+        title: 'Failed to load generations',
         description: error.message,
         variant: 'error',
       });
@@ -68,160 +78,128 @@ export function TransformationsPanel({ notebookId }: TransformationsPanelProps) 
     }
   };
 
-  const loadModels = async () => {
+  const loadInsights = async (sourcesToLoad: Source[]) => {
     try {
-      const data = await apiClient.getModels({ type: 'language' });
-      setModels(data);
-      if (data.length > 0) {
-        setPlaygroundModel(data[0].id);
-      }
-    } catch (error: any) {
-      console.error('Failed to load models:', error);
-    }
-  };
-
-  const handleCreate = async () => {
-    try {
-      const newTransformation = await apiClient.createTransformation(formData);
-      setTransformations(prev => [newTransformation, ...prev]);
-      setShowCreateModal(false);
-      resetForm();
-      showToast({
-        title: 'Transformation created!',
-        variant: 'success',
-      });
-    } catch (error: any) {
-      showToast({
-        title: 'Failed to create transformation',
-        description: error.message,
-        variant: 'error',
-      });
-    }
-  };
-
-  const handleUpdate = async () => {
-    if (!selectedTransformation) return;
-
-    try {
-      const updated = await apiClient.updateTransformation(selectedTransformation.id, formData);
-      setTransformations(prev =>
-        prev.map(t => (t.id === updated.id ? updated : t))
+      // Fetch insights for all sources in parallel
+      const insightPromises = sourcesToLoad.map(source =>
+        apiClient.getSourceInsights(source.id).catch(error => {
+          console.error(`Failed to load insights for source ${source.id}:`, error);
+          return [] as SourceInsight[];
+        })
       );
-      setShowEditModal(false);
-      setSelectedTransformation(null);
-      resetForm();
-      showToast({
-        title: 'Transformation updated!',
-        variant: 'success',
-      });
-    } catch (error: any) {
-      showToast({
-        title: 'Failed to update transformation',
-        description: error.message,
-        variant: 'error',
-      });
+      
+      const insightArrays = await Promise.all(insightPromises);
+      const allInsights = insightArrays.flat();
+      
+      setInsights(allInsights);
+    } catch (error) {
+      console.error('Failed to load insights:', error);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this transformation?')) return;
-
-    try {
-      await apiClient.deleteTransformation(id);
-      setTransformations(prev => prev.filter(t => t.id !== id));
-      showToast({
-        title: 'Transformation deleted!',
-        variant: 'success',
-      });
-    } catch (error: any) {
-      showToast({
-        title: 'Failed to delete transformation',
-        description: error.message,
-        variant: 'error',
-      });
-    }
-  };
-
-  const handleExecute = async () => {
-    if (!selectedTransformation || !playgroundInput.trim() || !playgroundModel) {
+  const handleApply = async () => {
+    if (!formData.sourceId || !formData.transformationId) {
       showToast({
         title: 'Missing required fields',
-        description: 'Please select a model and enter input text',
+        description: 'Please select a source and transformation',
         variant: 'warning',
       });
       return;
     }
 
-    setIsExecuting(true);
-    setPlaygroundOutput('');
+    setApplying(true);
 
     try {
-      const result = await apiClient.executeTransformation(
-        selectedTransformation.id,
-        playgroundInput,
-        playgroundModel
+      const insight = await apiClient.createSourceInsight(
+        formData.sourceId,
+        formData.transformationId,
+        formData.modelId || undefined
       );
-      setPlaygroundOutput(result.output);
+
+      // Add to the list optimistically
+      setInsights(prev => [insight, ...prev]);
+      setShowApplyModal(false);
+      
+      showToast({
+        title: 'Generation complete!',
+        description: 'Insight generated successfully',
+        variant: 'success',
+      });
+      
+      // Reload insights to ensure we have the latest from the backend
+      await loadInsights(sources);
     } catch (error: any) {
       showToast({
-        title: 'Execution failed',
+        title: 'Failed to generate',
         description: error.message,
         variant: 'error',
       });
     } finally {
-      setIsExecuting(false);
+      setApplying(false);
     }
   };
 
-  const openCreateModal = () => {
-    resetForm();
-    setShowCreateModal(true);
+  const handleDelete = async (insightId: string) => {
+    if (!confirm('Are you sure you want to delete this insight?')) return;
+
+    try {
+      await apiClient.deleteInsight(insightId);
+      setInsights(prev => prev.filter(i => i.id !== insightId));
+      showToast({
+        title: 'Insight deleted!',
+        variant: 'success',
+      });
+    } catch (error: any) {
+      showToast({
+        title: 'Failed to delete insight',
+        description: error.message,
+        variant: 'error',
+      });
+    }
   };
 
-  const openEditModal = (transformation: Transformation) => {
-    setSelectedTransformation(transformation);
-    setFormData({
-      name: transformation.name,
-      title: transformation.title,
-      description: transformation.description,
-      prompt: transformation.prompt,
-      apply_default: transformation.apply_default,
-    });
-    setShowEditModal(true);
+  const handleSaveAsNote = async (insight: SourceInsight) => {
+    try {
+      await apiClient.saveInsightAsNote(insight.id, notebookId);
+      showToast({
+        title: 'Saved as note!',
+        description: 'Insight converted to note successfully',
+        variant: 'success',
+      });
+    } catch (error: any) {
+      showToast({
+        title: 'Failed to save as note',
+        description: error.message,
+        variant: 'error',
+      });
+    }
   };
 
-  const openPlayground = (transformation: Transformation) => {
-    setSelectedTransformation(transformation);
-    setPlaygroundInput('');
-    setPlaygroundOutput('');
-    setShowPlaygroundModal(true);
+  const viewInsight = (insight: SourceInsight) => {
+    setSelectedInsight(insight);
+    setShowInsightModal(true);
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      title: '',
-      description: '',
-      prompt: '',
-      apply_default: false,
-    });
+  const getSourceTitle = (sourceId: string) => {
+    const source = sources.find(s => s.id === sourceId);
+    return source?.title || 'Unknown Source';
   };
 
-  const getMenuItems = (transformation: Transformation) => [
+  const getMenuItems = (insight: SourceInsight) => [
     {
-      label: 'Edit',
-      icon: <Edit2 className="w-4 h-4" />,
-      onClick: () => openEditModal(transformation),
+      label: 'View Details',
+      icon: <FileText className="w-4 h-4" />,
+      onClick: () => viewInsight(insight),
     },
     {
-      label: 'Use in Playground',
-      icon: <Play className="w-4 h-4" />,
-      onClick: () => openPlayground(transformation),
+      label: 'Save as Note',
+      icon: <Save className="w-4 h-4" />,
+      onClick: () => handleSaveAsNote(insight),
     },
     {
       label: 'Delete',
       icon: <Trash2 className="w-4 h-4" />,
-      onClick: () => handleDelete(transformation.id),
+      onClick: () => handleDelete(insight.id),
       destructive: true,
     },
   ];
@@ -230,179 +208,129 @@ export function TransformationsPanel({ notebookId }: TransformationsPanelProps) 
     <div className="glass-card p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Wand2 className="w-5 h-5 text-secondary" />
-          <h2 className="font-semibold text-text-primary">Transformations</h2>
-          <span className="text-xs text-text-tertiary">
-            ({transformations.length})
+        <div>
+          <div className="flex items-center gap-2">
+            <Wand2 className="w-5 h-5 text-secondary" />
+            <h2 className="font-semibold text-text-primary">Generations</h2>
+          </div>
+          <span className="text-xs text-text-tertiary mt-1">
+            {insights.length} {insights.length === 1 ? 'insight' : 'insights'}
           </span>
         </div>
         <Button
           size="sm"
           leftIcon={<Plus />}
-          onClick={openCreateModal}
+          onClick={() => setShowApplyModal(true)}
+          disabled={sources.length === 0 || transformations.length === 0}
         >
-          Create
+          Generate
         </Button>
       </div>
 
-      {/* Transformations List */}
+      {/* Insights List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-secondary" />
         </div>
       ) : transformations.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="p-4 glass-card bg-accent-warning/10 border border-accent-warning/30">
+            <Wand2 className="w-12 h-12 mx-auto mb-4 text-accent-warning" />
+            <p className="font-medium text-accent-warning mb-2">No Transformation Types Available</p>
+            <p className="text-sm text-text-secondary">
+              Please create transformation types in Settings to generate insights
+            </p>
+          </div>
+        </div>
+      ) : sources.length === 0 ? (
         <div className="text-center py-12 text-text-tertiary">
           <Wand2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No transformations yet</p>
+          <p>No sources in this notebook</p>
           <p className="text-sm mt-2">
-            Create your first transformation to process content with AI
+            Add sources to generate insights from your content
+          </p>
+        </div>
+      ) : insights.length === 0 ? (
+        <div className="text-center py-12 text-text-tertiary">
+          <Wand2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No insights generated yet</p>
+          <p className="text-sm mt-2">
+            Click Generate to extract insights from your sources
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {transformations.map((transformation) => (
+          {insights.map((insight) => (
             <BaseCard
-              key={transformation.id}
-              title={transformation.name}
-              subtitle={transformation.title}
-              menuItems={getMenuItems(transformation)}
+              key={insight.id}
+              title={insight.insight_type}
+              subtitle={getSourceTitle(insight.source_id)}
+              menuItems={getMenuItems(insight)}
             >
-              <p className="text-sm text-text-secondary line-clamp-2">
-                {transformation.description}
+              <p className="text-sm text-text-secondary line-clamp-3 mt-2">
+                {insight.content}
               </p>
-              {transformation.apply_default && (
-                <div className="mt-2">
-                  <span className="text-xs px-2 py-1 rounded bg-primary/20 text-primary">
-                    Default
-                  </span>
-                </div>
-              )}
             </BaseCard>
           ))}
         </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Apply Transformation Modal */}
       <BaseModal
-        isOpen={showCreateModal || showEditModal}
-        onClose={() => {
-          setShowCreateModal(false);
-          setShowEditModal(false);
-          setSelectedTransformation(null);
-          resetForm();
-        }}
-        title={showEditModal ? 'Edit Transformation' : 'Create Transformation'}
+        isOpen={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        title="Apply Transformation"
       >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-2">
-              Name
-            </label>
-            <Input
-              placeholder="Enter transformation name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Card Title
-            </label>
-            <Input
-              placeholder="e.g., 'Key Topics'"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
-            <p className="text-xs text-text-tertiary mt-1">
-              This will be the title of cards created by this transformation
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Description
-            </label>
-            <Textarea
-              placeholder="What does this transformation do?"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Prompt
-            </label>
-            <Textarea
-              placeholder="Enter the transformation prompt..."
-              value={formData.prompt}
-              onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
-              rows={8}
-            />
-            <p className="text-xs text-text-tertiary mt-1">
-              Define how the AI should process the input
-            </p>
-          </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.apply_default}
-              onChange={(e) => setFormData({ ...formData, apply_default: e.target.checked })}
-              className="w-4 h-4 rounded border-border bg-card text-primary focus:ring-2 focus:ring-primary/50"
-            />
-            <span className="text-sm text-text-secondary">
-              Suggest by default on new sources
-            </span>
-          </label>
-
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={showEditModal ? handleUpdate : handleCreate}
-              className="flex-1"
-            >
-              {showEditModal ? 'Update' : 'Create'}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setShowCreateModal(false);
-                setShowEditModal(false);
-                setSelectedTransformation(null);
-                resetForm();
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </BaseModal>
-
-      {/* Playground Modal */}
-      <BaseModal
-        isOpen={showPlaygroundModal}
-        onClose={() => {
-          setShowPlaygroundModal(false);
-          setSelectedTransformation(null);
-          setPlaygroundInput('');
-          setPlaygroundOutput('');
-        }}
-        title={`Playground: ${selectedTransformation?.name || ''}`}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Model
+              Source *
             </label>
             <select
-              value={playgroundModel}
-              onChange={(e) => setPlaygroundModel(e.target.value)}
+              value={formData.sourceId}
+              onChange={(e) => setFormData({ ...formData, sourceId: e.target.value })}
               className="w-full px-3 py-2 rounded bg-card border border-border text-text-primary focus:outline-none focus:border-primary"
             >
+              {sources.map((source) => (
+                <option key={source.id} value={source.id}>
+                  {source.title || 'Untitled'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Transformation *
+            </label>
+            <select
+              value={formData.transformationId}
+              onChange={(e) => setFormData({ ...formData, transformationId: e.target.value })}
+              className="w-full px-3 py-2 rounded bg-card border border-border text-text-primary focus:outline-none focus:border-primary"
+            >
+              {transformations.map((trans) => (
+                <option key={trans.id} value={trans.id}>
+                  {trans.name} - {trans.title}
+                </option>
+              ))}
+            </select>
+            {formData.transformationId && (
+              <p className="text-xs text-text-tertiary mt-1">
+                {transformations.find(t => t.id === formData.transformationId)?.description}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Model (Optional)
+            </label>
+            <select
+              value={formData.modelId}
+              onChange={(e) => setFormData({ ...formData, modelId: e.target.value })}
+              className="w-full px-3 py-2 rounded bg-card border border-border text-text-primary focus:outline-none focus:border-primary"
+            >
+              <option value="">Use Default</option>
               {models.map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.name}
@@ -411,40 +339,76 @@ export function TransformationsPanel({ notebookId }: TransformationsPanelProps) 
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Input Text
-            </label>
-            <Textarea
-              placeholder="Enter text to transform..."
-              value={playgroundInput}
-              onChange={(e) => setPlaygroundInput(e.target.value)}
-              rows={6}
-            />
+          <div className="flex gap-2 pt-4">
+            <Button
+              onClick={handleApply}
+              disabled={applying || !formData.sourceId || !formData.transformationId}
+              leftIcon={applying ? <Loader2 className="animate-spin" /> : <Wand2 />}
+              className="flex-1"
+            >
+              {applying ? 'Applying...' : 'Apply Transformation'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowApplyModal(false)}
+              disabled={applying}
+            >
+              Cancel
+            </Button>
           </div>
+        </div>
+      </BaseModal>
 
-          <Button
-            onClick={handleExecute}
-            disabled={isExecuting || !playgroundInput.trim()}
-            leftIcon={isExecuting ? <Loader2 className="animate-spin" /> : <Play />}
-            className="w-full"
-          >
-            {isExecuting ? 'Executing...' : 'Run Transformation'}
-          </Button>
-
-          {playgroundOutput && (
+      {/* View Insight Modal */}
+      <BaseModal
+        isOpen={showInsightModal}
+        onClose={() => {
+          setShowInsightModal(false);
+          setSelectedInsight(null);
+        }}
+        title={selectedInsight?.insight_type || 'Insight'}
+        size="lg"
+      >
+        {selectedInsight && (
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
-                Output
+                Source
+              </label>
+              <p className="text-text-primary">{getSourceTitle(selectedInsight.source_id)}</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Content
               </label>
               <div className="p-4 rounded bg-card/50 border border-border">
-                <pre className="text-sm text-text-primary whitespace-pre-wrap font-mono">
-                  {playgroundOutput}
+                <pre className="text-sm text-text-primary whitespace-pre-wrap">
+                  {selectedInsight.content}
                 </pre>
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                onClick={() => handleSaveAsNote(selectedInsight)}
+                leftIcon={<Save />}
+                className="flex-1"
+              >
+                Save as Note
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowInsightModal(false);
+                  setSelectedInsight(null);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
       </BaseModal>
     </div>
   );
