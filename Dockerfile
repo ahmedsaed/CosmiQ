@@ -1,5 +1,5 @@
-# Build stage
-FROM python:3.12-slim-bookworm AS builder
+# Build stage for Python
+FROM python:3.12-slim-bookworm AS python-builder
 
 # Install uv using the official method
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -30,6 +30,23 @@ RUN uv sync --frozen --no-dev
 # Copy the rest of the application code
 COPY . /app
 
+# Build stage for Next.js
+FROM node:20-slim AS nextjs-builder
+
+WORKDIR /app/frontend
+
+# Copy package files
+COPY app/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy the rest of the Next.js app
+COPY app/ ./
+
+# Build the Next.js app
+RUN npm run build
+
 # Runtime stage
 FROM python:3.12-slim-bookworm AS runtime
 
@@ -38,6 +55,12 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libmagic1 \
     ffmpeg \
     supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js for running Next.js
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv using the official method
@@ -46,14 +69,20 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Set the working directory in the container to /app
 WORKDIR /app
 
-# Copy the virtual environment from builder stage
-COPY --from=builder /app/.venv /app/.venv
+# Copy the virtual environment from python builder stage
+COPY --from=python-builder /app/.venv /app/.venv
 
 # Copy the application code
-COPY --from=builder /app /app
+COPY --from=python-builder /app /app
 
-# Expose ports for Streamlit and API
-EXPOSE 8502 5055
+# Copy the built Next.js app from nextjs builder stage
+COPY --from=nextjs-builder /app/frontend/.next /app/app/.next
+COPY --from=nextjs-builder /app/frontend/node_modules /app/app/node_modules
+COPY --from=nextjs-builder /app/frontend/package*.json /app/app/
+COPY --from=nextjs-builder /app/frontend/next.config.js /app/app/
+
+# Expose ports for Next.js and API
+EXPOSE 3000 5055
 
 RUN mkdir -p /app/data
 
