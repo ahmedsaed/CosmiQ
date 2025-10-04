@@ -519,7 +519,7 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
       </div>
 
       {/* Input Area */}
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-center">
         <Textarea
           placeholder={loadingModels ? "Loading models..." : "Type your message... (Ctrl+Enter to send)"}
           value={input}
@@ -533,7 +533,7 @@ export function ChatPanel({ notebookId }: ChatPanelProps) {
           onClick={handleSendMessage}
           disabled={!input.trim() || isStreaming || loadingModels || !defaultModel}
           leftIcon={isStreaming ? <Loader2 className="animate-spin" /> : <Send />}
-          className="h-[42px] px-6"
+          className="px-6 py-3"
         >
           {isStreaming ? 'Sending...' : 'Send'}
         </Button>
